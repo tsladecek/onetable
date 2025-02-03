@@ -5,15 +5,11 @@ import (
 	"github.com/tsladecek/onetable/persistent"
 )
 
-type OneTable interface {
-	Get(key string) ([]byte, error)
-	Insert(key string, value []byte) error
-	Delete(key string) error
-}
-
 func main() {
 	im := inmemory.New()
-	t, err := persistent.New("/home/tomas/Downloads")
+
+	index := persistent.NewIndexHashTable()
+	t, err := persistent.New("/home/tomas/Downloads", index)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -24,6 +20,10 @@ func main() {
 	println(string(v))
 
 	_ = t.Insert("key", []byte("val1"))
+	v, _ = t.Get("key")
+	println(string(v))
+
+	_ = t.Delete("key")
 	v, _ = t.Get("key")
 	println(string(v))
 }

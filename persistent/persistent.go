@@ -12,44 +12,38 @@ import (
 	"sync"
 )
 
-type valuePosition struct {
-	offset int
+type Offset int
+
+type valueMetadata struct {
+	offset Offset
 	length int
 }
 
-type Index map[string]valuePosition
+const TOMBSTONE int = -1
+
+type Index interface {
+	get(key string) *valueMetadata
+	insert(key string, value valueMetadata) error
+	delete(key string) error
+}
 
 const (
-	DataFileName  string = "data.ot"
-	IndexFileName string = "index.ot"
+	dataFileName  string = "data.ot"
+	indexFileName string = "index.ot"
 )
 
 type Persistent struct {
-	Path string
+	Path  string
+	Index Index
 	// TODO Filesystem lock
 	lock      sync.Mutex
-	index     Index
-	offset    int
+	offset    Offset
 	dataPath  string
 	indexPath string
 }
 
-func (p *Persistent) checkPath(pth string) error {
-	if _, err := os.Stat(pth); os.IsNotExist(err) {
-		return err
-	}
-
-	return nil
-}
-
-// Populate in memory index data structure from the index log.
-// Index file contains newline separated lines
-// in following format: {key: string},{offset: int64},{length: int}
-func (p *Persistent) fillIndex() error {
-	index := make(Index)
-	p.index = index
-
-	f, err := os.Open(p.indexPath)
+func (p *Persistent) fillIndex(indexPath string) error {
+	f, err := os.Open(indexPath)
 	if err != nil {
 		return err
 	}
@@ -72,24 +66,32 @@ func (p *Persistent) fillIndex() error {
 		idx += 1
 
 		key := record[0]
-		var offset, length int
+		var offset Offset
+		var offsetRaw, length int
 
-		if offset, err = strconv.Atoi(record[1]); err != nil {
+		if offsetRaw, err = strconv.Atoi(record[1]); err != nil {
 			return fmt.Errorf("Invalid record at line %d. Offset %s is not an integer", idx, record[1])
 		}
+
+		offset = Offset(offsetRaw)
 
 		if length, err = strconv.Atoi(record[2]); err != nil {
 			return fmt.Errorf("Invalid record at line %d. Length %s is not an integer", idx, record[2])
 		}
 
-		p.index[key] = valuePosition{offset: offset, length: length}
+		if length == TOMBSTONE {
+			p.Index.delete(key)
+			continue
+		}
+
+		p.Index.insert(key, valueMetadata{offset: offset, length: length})
 	}
 	return nil
 }
 
 func (p *Persistent) loadData() error {
-	dataPath := path.Join(p.Path, DataFileName)
-	indexPath := path.Join(p.Path, IndexFileName)
+	dataPath := path.Join(p.Path, dataFileName)
+	indexPath := path.Join(p.Path, indexFileName)
 
 	// if data exists and index does not, panic
 	_, dataFileErr := os.Stat(dataPath)
@@ -116,7 +118,10 @@ func (p *Persistent) loadData() error {
 		}
 	}
 
-	p.fillIndex()
+	err := p.fillIndex(indexPath)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	p.dataPath = dataPath
 	p.indexPath = indexPath
@@ -126,22 +131,23 @@ func (p *Persistent) loadData() error {
 		return err
 	}
 
-	p.offset = int(dataFile.Size())
+	p.offset = Offset(dataFile.Size())
 
 	return nil
 }
 
-func New(folderPath string) (*Persistent, error) {
-	p := &Persistent{Path: folderPath}
+func New(folderPath string, index Index) (*Persistent, error) {
+	p := &Persistent{Path: folderPath, Index: index}
 
 	// check if path to data folder exists
-	err := p.checkPath(folderPath)
-	if err != nil {
-		panic(err.Error())
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	// if there is data at dataPath, populate the inmemory index
-	err = p.loadData()
+	err := p.loadData()
 
 	if err != nil {
 		panic(err.Error())
@@ -158,15 +164,7 @@ func validateKey(key string) error {
 	return nil
 }
 
-func (p *Persistent) Insert(key string, value []byte) error {
-	err := validateKey(key)
-	if err != nil {
-		return err
-	}
-
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
+func (p *Persistent) writeValue(value []byte) error {
 	f, err := os.OpenFile(p.dataPath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -179,26 +177,56 @@ func (p *Persistent) Insert(key string, value []byte) error {
 		return err
 	}
 
-	fidx, err := os.OpenFile(p.indexPath, os.O_APPEND|os.O_WRONLY, 0644)
+	return nil
+}
+
+func (p *Persistent) writeKey(key string, valueMeta valueMetadata) error {
+	f, err := os.OpenFile(p.indexPath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	defer fidx.Close()
+	defer f.Close()
 
-	w := csv.NewWriter(fidx)
-	w.Write([]string{key, strconv.Itoa(int(p.offset)), strconv.Itoa(len(value))})
+	w := csv.NewWriter(f)
+	w.Write([]string{
+		key, strconv.Itoa(int(valueMeta.offset)), strconv.Itoa(valueMeta.length)})
+
 	w.Flush()
 
-	p.index[key] = valuePosition{offset: p.offset, length: len(value)}
-	p.offset = p.offset + len(value)
+	return nil
+}
+
+func (p *Persistent) Insert(key string, value []byte) error {
+	err := validateKey(key)
+	if err != nil {
+		return err
+	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	err = p.writeValue(value)
+	if err != nil {
+		return err
+	}
+
+	valueMeta := valueMetadata{offset: p.offset, length: len(value)}
+
+	err = p.writeKey(key, valueMeta)
+	if err != nil {
+		return err
+	}
+
+	p.Index.insert(key, valueMeta)
+	p.offset = p.offset + Offset(len(value))
 
 	return nil
 }
 
 func (p *Persistent) Get(key string) ([]byte, error) {
-	valueMetadata, inside := p.index[key]
+	valueMeta := p.Index.get(key)
 
-	if !inside {
+	if valueMeta == nil {
 		return nil, nil
 	}
 
@@ -209,8 +237,16 @@ func (p *Persistent) Get(key string) ([]byte, error) {
 
 	defer f.Close()
 
-	b := make([]byte, valueMetadata.length)
-	f.ReadAt(b, int64(valueMetadata.offset))
+	b := make([]byte, valueMeta.length)
+	f.ReadAt(b, int64(valueMeta.offset))
 
 	return b, nil
+}
+
+func (p *Persistent) Delete(key string) error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	p.writeKey(key, valueMetadata{offset: -1, length: TOMBSTONE})
+	return p.Index.delete(key)
 }
