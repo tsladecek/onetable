@@ -31,3 +31,10 @@ v, _ = t.Get("key") // v = "val1"
 _ = t.Delete("key")
 v, _ = t.Get("key") // v = nil
 ```
+---
+
+You can also run a interactive session:
+
+```shell
+go run cmd/main.go --folder "/path/to/data"
+```

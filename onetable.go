@@ -13,8 +13,6 @@ import (
 )
 
 type typeOffset int
-type typeKey string
-type typeValue []byte
 
 type valueMetadata struct {
 	offset typeOffset
@@ -24,9 +22,9 @@ type valueMetadata struct {
 const tombstone int = -1
 
 type Index interface {
-	get(key typeKey) *valueMetadata
-	insert(key typeKey, value valueMetadata) error
-	delete(key typeKey) error
+	get(key string) *valueMetadata
+	insert(key string, value valueMetadata) error
+	delete(key string) error
 }
 
 const (
@@ -66,7 +64,7 @@ func (o *OneTable) fillIndex(indexPath string) error {
 
 		idx += 1
 
-		key := typeKey(record[0])
+		key := string(record[0])
 		var offset typeOffset
 		var offsetRaw, length int
 
@@ -157,7 +155,7 @@ func New(folderPath string, index Index) (*OneTable, error) {
 	return o, nil
 }
 
-func (key typeKey) validate() error {
+func validateKey(key string) error {
 	if strings.Contains(string(key), "\n") || strings.Contains(string(key), ",") {
 		return errors.New("Invalid key. Contains one of forbidden characters: '\\n' or ','")
 	}
@@ -165,7 +163,7 @@ func (key typeKey) validate() error {
 	return nil
 }
 
-func (o *OneTable) writeValue(value typeValue) error {
+func (o *OneTable) writeValue(value []byte) error {
 	f, err := os.OpenFile(o.dataPath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -181,7 +179,7 @@ func (o *OneTable) writeValue(value typeValue) error {
 	return nil
 }
 
-func (o *OneTable) writeKey(key typeKey, valueMeta valueMetadata) error {
+func (o *OneTable) writeKey(key string, valueMeta valueMetadata) error {
 	f, err := os.OpenFile(o.indexPath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -200,8 +198,8 @@ func (o *OneTable) writeKey(key typeKey, valueMeta valueMetadata) error {
 	return nil
 }
 
-func (o *OneTable) Insert(key typeKey, value typeValue) error {
-	err := key.validate()
+func (o *OneTable) Insert(key string, value []byte) error {
+	err := validateKey(key)
 	if err != nil {
 		return err
 	}
@@ -227,7 +225,7 @@ func (o *OneTable) Insert(key typeKey, value typeValue) error {
 	return nil
 }
 
-func (o *OneTable) Get(key typeKey) (typeValue, error) {
+func (o *OneTable) Get(key string) ([]byte, error) {
 	valueMeta := o.Index.get(key)
 
 	if valueMeta == nil {
@@ -241,13 +239,13 @@ func (o *OneTable) Get(key typeKey) (typeValue, error) {
 
 	defer f.Close()
 
-	b := make(typeValue, valueMeta.length)
+	b := make([]byte, valueMeta.length)
 	f.ReadAt(b, int64(valueMeta.offset))
 
 	return b, nil
 }
 
-func (o *OneTable) Delete(key typeKey) error {
+func (o *OneTable) Delete(key string) error {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
