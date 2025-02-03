@@ -35,9 +35,8 @@ const (
 )
 
 type OneTable struct {
-	Path  string
-	Index Index
-	// TODO Filesystem lock
+	Path      string
+	Index     Index
 	lock      sync.Mutex
 	offset    typeOffset
 	dataPath  string
@@ -228,7 +227,7 @@ func (o *OneTable) Insert(key typeKey, value typeValue) error {
 	return nil
 }
 
-func (o *OneTable) Get(key typeKey) ([]byte, error) {
+func (o *OneTable) Get(key typeKey) (typeValue, error) {
 	valueMeta := o.Index.get(key)
 
 	if valueMeta == nil {
@@ -242,7 +241,7 @@ func (o *OneTable) Get(key typeKey) ([]byte, error) {
 
 	defer f.Close()
 
-	b := make([]byte, valueMeta.length)
+	b := make(typeValue, valueMeta.length)
 	f.ReadAt(b, int64(valueMeta.offset))
 
 	return b, nil
