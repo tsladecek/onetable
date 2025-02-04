@@ -16,6 +16,20 @@ func NewIndexBST() *IndexBST {
 }
 
 func (i *IndexBST) get(key string) *valueMetadata {
+	current := i.root
+
+	for current != nil {
+		if current.key == key {
+			return &current.value
+		}
+
+		if current.key > key {
+			current = current.left
+		} else {
+			current = current.right
+		}
+	}
+
 	return nil
 }
 
@@ -33,8 +47,18 @@ func (i *IndexBST) insert(key string, valueMeta valueMetadata) error {
 		if current.key == key {
 			current.value = valueMeta
 			break
-		} else if current.key < key {
-
+		} else if current.key > key {
+			if current.left == nil {
+				current.left = newNode
+				break
+			}
+			current = current.left
+		} else {
+			if current.right == nil {
+				current.right = newNode
+				break
+			}
+			current = current.right
 		}
 	}
 
