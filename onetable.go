@@ -19,12 +19,18 @@ type valueMetadata struct {
 	length int
 }
 
+type item struct {
+	key   string
+	value valueMetadata
+}
+
 const tombstone int = -1
 
 type Index interface {
 	get(key string) *valueMetadata
 	insert(key string, value valueMetadata) error
 	delete(key string) error
+	between(fromKey string, toKey string) ([]*item, error)
 }
 
 const (

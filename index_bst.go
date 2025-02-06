@@ -15,8 +15,8 @@ func NewIndexBST() *IndexBST {
 	return &IndexBST{}
 }
 
-func (i *IndexBST) get(key string) *valueMetadata {
-	current := i.root
+func (index *IndexBST) get(key string) *valueMetadata {
+	current := index.root
 
 	for current != nil {
 		if current.key == key {
@@ -33,15 +33,15 @@ func (i *IndexBST) get(key string) *valueMetadata {
 	return nil
 }
 
-func (i *IndexBST) insert(key string, valueMeta valueMetadata) error {
+func (index *IndexBST) insert(key string, valueMeta valueMetadata) error {
 	newNode := &BSTNode{key: key, value: valueMeta}
 
-	if i.root == nil {
-		i.root = newNode
+	if index.root == nil {
+		index.root = newNode
 		return nil
 	}
 
-	current := i.root
+	current := index.root
 
 	for {
 		if current.key == key {
@@ -65,9 +65,9 @@ func (i *IndexBST) insert(key string, valueMeta valueMetadata) error {
 	return nil
 }
 
-func (i *IndexBST) delete(key string) error {
+func (index *IndexBST) delete(key string) error {
 	var parent *BSTNode
-	current := i.root
+	current := index.root
 
 	for current != nil {
 		if current.key == key {
@@ -88,7 +88,7 @@ func (i *IndexBST) delete(key string) error {
 	}
 
 	if parent == nil {
-		i.root = nil
+		index.root = nil
 		return nil
 	}
 
@@ -125,4 +125,8 @@ func (i *IndexBST) delete(key string) error {
 		parent.right = replacement
 	}
 	return nil
+}
+
+func (index *IndexBST) between(fromKey string, toKey string) ([]*item, error) {
+	return nil, nil
 }
