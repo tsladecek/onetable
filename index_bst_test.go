@@ -1,6 +1,9 @@
 package onetable
 
-import "testing"
+import (
+	"sort"
+	"testing"
+)
 
 func TestBSTInsert(t *testing.T) {
 	bst := NewIndexBST()
@@ -178,5 +181,27 @@ func TestBSTDeleteTwoChildren(t *testing.T) {
 	v := bst.get("b")
 	if v != nil {
 		t.Fatal("Node b found in tree even after deletion")
+	}
+}
+
+func TestBSTInorder(t *testing.T) {
+	bst := NewIndexBST()
+	items := []string{"d", "b", "a", "c", "f", "e", "g"}
+	for i, k := range items {
+		err := bst.insert(k, valueMetadata{offset: typeOffset(i)})
+
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+
+	res := &[]*BSTNode{}
+	inorder(res, bst.root)
+
+	sort.Strings(items)
+	for i, v := range *res {
+		if items[i] != v.key {
+			t.Fatalf("Expected %s, Received %s", items[i], v.key)
+		}
 	}
 }

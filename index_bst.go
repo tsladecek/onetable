@@ -127,6 +127,23 @@ func (index *IndexBST) delete(key string) error {
 	return nil
 }
 
+func inorder(buffer *[]*BSTNode, node *BSTNode) {
+	if node == nil {
+		return
+	}
+
+	if node.left != nil {
+		inorder(buffer, node.left)
+	}
+
+	*buffer = append(*buffer, node)
+
+	if node.right != nil {
+		inorder(buffer, node.right)
+	}
+}
+
 func (index *IndexBST) between(fromKey string, toKey string) ([]*item, error) {
-	return nil, nil
+	var items []*item
+	return items, nil
 }
