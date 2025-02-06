@@ -23,7 +23,7 @@ func (i *IndexBST) get(key string) *valueMetadata {
 			return &current.value
 		}
 
-		if current.key > key {
+		if key < current.key {
 			current = current.left
 		} else {
 			current = current.right
@@ -47,7 +47,7 @@ func (i *IndexBST) insert(key string, valueMeta valueMetadata) error {
 		if current.key == key {
 			current.value = valueMeta
 			break
-		} else if current.key > key {
+		} else if key < current.key {
 			if current.left == nil {
 				current.left = newNode
 				break
@@ -66,5 +66,63 @@ func (i *IndexBST) insert(key string, valueMeta valueMetadata) error {
 }
 
 func (i *IndexBST) delete(key string) error {
+	var parent *BSTNode
+	current := i.root
+
+	for current != nil {
+		if current.key == key {
+			break
+		}
+
+		parent = current
+
+		if key < current.key {
+			current = current.left
+		} else {
+			current = current.right
+		}
+	}
+
+	if current == nil {
+		return nil
+	}
+
+	if parent == nil {
+		i.root = nil
+		return nil
+	}
+
+	var replacement *BSTNode
+	if current.left == nil && current.right == nil {
+		// 1. Leaf Node
+		replacement = nil
+	} else if current.left != nil && current.right != nil {
+		// 3. Two children
+		// find smallest child of right node an use this as a replacement
+		ptemp := current
+		ctemp := current.right
+
+		for ctemp.left != nil {
+			ptemp = ctemp
+			ctemp = ctemp.left
+		}
+
+		ptemp.left = nil
+		ctemp.left = current.left
+		ctemp.right = ptemp
+		replacement = ctemp
+	} else {
+		// 2. One child
+		replacement = current.left
+		if replacement == nil {
+			replacement = current.right
+		}
+	}
+
+	if current.key < parent.key {
+		parent.left = replacement
+	} else {
+		parent.right = replacement
+	}
 	return nil
 }
