@@ -93,11 +93,8 @@ func (index *IndexBST) delete(key string) error {
 	}
 
 	var replacement *BSTNode
-	if current.left == nil && current.right == nil {
-		// 1. Leaf Node
-		replacement = nil
-	} else if current.left != nil && current.right != nil {
-		// 3. Two children
+	if current.left != nil && current.right != nil {
+		// Two children
 		// find smallest child of right node an use this as a replacement
 		ptemp := current
 		ctemp := current.right
@@ -112,7 +109,6 @@ func (index *IndexBST) delete(key string) error {
 		ctemp.right = ptemp
 		replacement = ctemp
 	} else {
-		// 2. One child
 		replacement = current.left
 		if replacement == nil {
 			replacement = current.right
