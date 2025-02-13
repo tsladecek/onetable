@@ -32,7 +32,7 @@ func (index *IndexHashTable) delete(key string) error {
 	return nil
 }
 
-func (index *IndexHashTable) between(fromKey string, toKey string) ([]*Item, error) {
+func (index *IndexHashTable) between(fromKey string, toKey string) ([]*item, error) {
 	keys := []string{}
 
 	for k := range index.index {
@@ -41,7 +41,7 @@ func (index *IndexHashTable) between(fromKey string, toKey string) ([]*Item, err
 		}
 	}
 
-	items := make([]*Item, len(keys))
+	items := make([]*item, len(keys))
 	sort.Strings(keys)
 
 	for i, k := range keys {
@@ -49,7 +49,7 @@ func (index *IndexHashTable) between(fromKey string, toKey string) ([]*Item, err
 		if !found {
 			return nil, fmt.Errorf("Found no value for key %s", k)
 		}
-		items[i] = &Item{Key: k, Value: v}
+		items[i] = &item{Key: k, Value: v}
 	}
 
 	return items, nil

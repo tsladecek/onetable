@@ -87,11 +87,6 @@ func (index *IndexBST) delete(key string) error {
 		return nil
 	}
 
-	if parent == nil {
-		index.root = nil
-		return nil
-	}
-
 	var replacement *BSTNode
 	if current.left != nil && current.right != nil {
 		// Two children
@@ -118,7 +113,9 @@ func (index *IndexBST) delete(key string) error {
 		}
 	}
 
-	if current.key < parent.key {
+	if parent == nil {
+		index.root = replacement
+	} else if current.key < parent.key {
 		parent.left = replacement
 	} else {
 		parent.right = replacement
@@ -142,7 +139,7 @@ func inorder(buffer *[]*BSTNode, node *BSTNode) {
 	}
 }
 
-func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string) {
+func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string) {
 	if node == nil {
 		return
 	}
@@ -152,7 +149,7 @@ func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string
 	}
 
 	if node.key >= fromKey && node.key <= toKey {
-		*buffer = append(*buffer, &Item{Key: node.key, Value: node.value})
+		*buffer = append(*buffer, &item{Key: node.key, Value: node.value})
 	}
 
 	if toKey > node.key {
@@ -160,8 +157,8 @@ func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string
 	}
 }
 
-func (index *IndexBST) between(fromKey string, toKey string) ([]*Item, error) {
-	var res []*Item
+func (index *IndexBST) between(fromKey string, toKey string) ([]*item, error) {
+	var res []*item
 	inorderBetween(&res, index.root, fromKey, toKey)
 	return res, nil
 }

@@ -93,6 +93,41 @@ func TestBSTDeleteLeaf(t *testing.T) {
 		t.Fatal("Expecting no error when deleting in empty tree")
 	}
 
+	bst.insert("b", valueMetadata{})
+	bst.insert("a", valueMetadata{})
+
+	if bst.root.key != "b" {
+		t.Fatalf("Expected root to be 'b'. Found %s", bst.root.key)
+	}
+
+	if bst.root.left == nil {
+		t.Fatal("bst.root.left not 'a'. Found nil")
+	}
+
+	if bst.root.left.key != "a" {
+		t.Fatalf("bst.root.left not 'a'. Found %s", bst.root.left.key)
+	}
+
+	bst.delete("b")
+
+	if bst.root == nil {
+		t.Fatal("Root is nil. Expected 'a' node to be promoted")
+	}
+
+	if bst.root.key != "a" {
+		t.Fatalf("After Delete: Expected root to be 'a'. Found %s", bst.root.key)
+	}
+
+	if bst.root.left != nil && bst.root.right != nil {
+		t.Fatal("root left and right is not nil")
+	}
+
+	bst.delete("a")
+
+	if bst.root != nil {
+		t.Fatal("Root is not nil. Expected tree to be empty")
+	}
+
 	for i, k := range []string{"d", "b", "a", "c1", "c0", "c2", "f", "e", "g"} {
 		err := bst.insert(k, valueMetadata{offset: typeOffset(i)})
 

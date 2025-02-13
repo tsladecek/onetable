@@ -32,11 +32,15 @@ func main() {
 		printHelp()
 	}
 
-	if *pindex != "hashtable" && *pindex != "bst" {
+	var index onetable.Index
+	if *pindex == "hashtable" {
+		index = onetable.NewIndexHashTable()
+	} else if *pindex == "bst" {
+		index = onetable.NewIndexBST()
+	} else {
 		printHelp()
 	}
 
-	index := onetable.NewIndexHashTable()
 	t, err := onetable.New(*pfolderPath, index)
 	if err != nil {
 		panic(err.Error())
@@ -117,8 +121,7 @@ func main() {
 
 			res := ""
 			for _, item := range items {
-				value, _ := t.Get(item.Key)
-				res += fmt.Sprintf("%s: %s\t", item.Key, value)
+				res += fmt.Sprintf("%s: %s\t", item.Key, item.Value)
 			}
 			fmt.Println(">" + res)
 			continue

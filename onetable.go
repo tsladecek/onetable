@@ -32,9 +32,14 @@ func (v valueMetadata) Length() int {
 	return v.length
 }
 
-type Item struct {
+type item struct {
 	Key   string
 	Value ValueMetadata
+}
+
+type RangeItem struct {
+	Key   string
+	Value []byte
 }
 
 const tombstone int = -1
@@ -43,7 +48,7 @@ type Index interface {
 	get(key string) (ValueMetadata, bool)
 	insert(key string, value ValueMetadata) error
 	delete(key string) error
-	between(fromKey string, toKey string) ([]*Item, error)
+	between(fromKey string, toKey string) ([]*item, error)
 }
 
 const (
@@ -244,12 +249,7 @@ func (o *OneTable) Insert(key string, value []byte) error {
 	return nil
 }
 
-func (o *OneTable) Get(key string) ([]byte, error) {
-	valueMeta, found := o.Index.get(key)
-
-	if !found {
-		return nil, nil
-	}
+func (o *OneTable) readValue(offset typeOffset, length int) ([]byte, error) {
 
 	f, err := os.Open(o.dataPath)
 	if err != nil {
@@ -258,10 +258,21 @@ func (o *OneTable) Get(key string) ([]byte, error) {
 
 	defer f.Close()
 
-	b := make([]byte, valueMeta.Length())
-	f.ReadAt(b, int64(valueMeta.Offset()))
+	b := make([]byte, length)
+	f.ReadAt(b, int64(offset))
 
 	return b, nil
+
+}
+
+func (o *OneTable) Get(key string) ([]byte, error) {
+	valueMeta, found := o.Index.get(key)
+
+	if !found {
+		return nil, nil
+	}
+
+	return o.readValue(valueMeta.Offset(), valueMeta.Length())
 }
 
 func (o *OneTable) Delete(key string) error {
@@ -272,6 +283,23 @@ func (o *OneTable) Delete(key string) error {
 	return o.Index.delete(key)
 }
 
-func (o *OneTable) Between(fromKey string, toKey string) ([]*Item, error) {
-	return o.Index.between(fromKey, toKey)
+func (o *OneTable) Between(fromKey string, toKey string) ([]*RangeItem, error) {
+	items, err := o.Index.between(fromKey, toKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ritems := make([]*RangeItem, len(items))
+
+	for i := 0; i < len(items); i++ {
+		v, err := o.readValue(items[i].Value.Offset(), items[i].Value.Length())
+		if err != nil {
+			return nil, err
+		}
+
+		ritems[i] = &RangeItem{Key: items[i].Key, Value: v}
+	}
+
+	return ritems, nil
 }
