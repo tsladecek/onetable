@@ -147,7 +147,7 @@ func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string
 		return
 	}
 
-	if node.left != nil && node.key >= fromKey {
+	if fromKey < node.key {
 		inorderBetween(buffer, node.left, fromKey, toKey)
 	}
 
@@ -155,13 +155,13 @@ func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string
 		*buffer = append(*buffer, &Item{Key: node.key, Value: node.value})
 	}
 
-	if node.right != nil && node.key <= toKey {
+	if toKey > node.key {
 		inorderBetween(buffer, node.right, fromKey, toKey)
 	}
 }
 
 func (index *IndexBST) between(fromKey string, toKey string) ([]*Item, error) {
-	res := &[]*Item{}
-	inorderBetween(res, index.root, fromKey, toKey)
-	return *res, nil
+	var res []*Item
+	inorderBetween(&res, index.root, fromKey, toKey)
+	return res, nil
 }

@@ -21,7 +21,10 @@ func BenchmarkIndexInsert(b *testing.B) {
 		func(b *testing.B) {
 			for b.Loop() {
 				for i, key := range keys {
-					indexHashTable.insert(key, valueMetadata{offset: typeOffset(i), length: 128})
+					err := indexHashTable.insert(key, valueMetadata{offset: typeOffset(i), length: 128})
+					if err != nil {
+						b.Fatal(err.Error())
+					}
 				}
 			}
 		},
@@ -31,7 +34,10 @@ func BenchmarkIndexInsert(b *testing.B) {
 		func(b *testing.B) {
 			for b.Loop() {
 				for i, key := range keys {
-					indexBST.insert(key, valueMetadata{offset: typeOffset(i), length: 128})
+					err := indexBST.insert(key, valueMetadata{offset: typeOffset(i), length: 128})
+					if err != nil {
+						b.Fatal(err.Error())
+					}
 				}
 			}
 		},
@@ -45,7 +51,10 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("Hashtable get", func(b *testing.B) {
 		for b.Loop() {
 			for _, idx := range indexesToGet {
-				indexHashTable.get(keys[idx])
+				_, found := indexHashTable.get(keys[idx])
+				if !found {
+					b.Fatal("Node not found")
+				}
 			}
 		}
 	})
@@ -53,7 +62,10 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("BST get", func(b *testing.B) {
 		for b.Loop() {
 			for _, idx := range indexesToGet {
-				indexBST.get(keys[idx])
+				_, found := indexBST.get(keys[idx])
+				if !found {
+					b.Fatal("Node not found")
+				}
 			}
 		}
 	})
@@ -70,7 +82,14 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("Hashtable between", func(b *testing.B) {
 		for b.Loop() {
 			for i := 0; i < n; i++ {
-				indexHashTable.between(keys[leftIdx[i]], keys[rightIdx[i]])
+				items, err := indexHashTable.between(keys[leftIdx[i]], keys[rightIdx[i]])
+				if err != nil {
+					b.Fatal(err.Error())
+				}
+
+				if len(items) != rightIdx[i]-leftIdx[i]+1 {
+					b.Fatal("Items length does not equal range")
+				}
 			}
 		}
 	})
@@ -78,7 +97,14 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("BST between", func(b *testing.B) {
 		for b.Loop() {
 			for i := 0; i < n; i++ {
-				indexBST.between(keys[leftIdx[i]], keys[rightIdx[i]])
+				items, err := indexBST.between(keys[leftIdx[i]], keys[rightIdx[i]])
+
+				if err != nil {
+					b.Fatal(err.Error())
+				}
+				if len(items) != rightIdx[i]-leftIdx[i]+1 {
+					b.Fatal("Items length does not equal range")
+				}
 			}
 		}
 	})
@@ -86,8 +112,14 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("Hashtable delete and insert", func(b *testing.B) {
 		for b.Loop() {
 			for _, key := range keys {
-				indexHashTable.delete(key)
-				indexHashTable.insert(key, valueMetadata{})
+				err := indexHashTable.delete(key)
+				if err != nil {
+					b.Fatal(err.Error())
+				}
+				err = indexHashTable.insert(key, valueMetadata{})
+				if err != nil {
+					b.Fatal(err.Error())
+				}
 			}
 		}
 	})
@@ -95,8 +127,14 @@ func BenchmarkIndexInsert(b *testing.B) {
 	b.Run("BST delete and insert", func(b *testing.B) {
 		for b.Loop() {
 			for _, key := range keys {
-				indexBST.delete(key)
-				indexBST.insert(key, valueMetadata{})
+				err := indexBST.delete(key)
+				if err != nil {
+					b.Fatal(err.Error())
+				}
+				err = indexBST.insert(key, valueMetadata{})
+				if err != nil {
+					b.Fatal(err.Error())
+				}
 			}
 		}
 	})
