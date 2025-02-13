@@ -1,6 +1,7 @@
 package onetable
 
 import (
+	"crypto/rand"
 	"sort"
 	"testing"
 )
@@ -209,24 +210,28 @@ func TestBSTInorder(t *testing.T) {
 func TestBSTBetween(t *testing.T) {
 	index := NewIndexBST()
 
-	if index == nil {
-		t.Fatal("Index is nil after initialization")
-	}
-
-	for _, key := range []string{"a", "b", "c1", "c0", "c2", "c", "d", "e"} {
+	n := 100
+	keys := make([]string, n)
+	for i := 0; i < n; i++ {
+		key := rand.Text()
 		err := index.insert(key, valueMetadata{})
+		keys[i] = key
 		if err != nil {
 			t.Fatalf("Failed to insert key %s", key)
 		}
 	}
 
-	between, err := index.between("c", "d")
+	sort.Strings(keys)
+	indexStart := 20
+	indexEnd := 80
+
+	between, err := index.between(keys[indexStart], keys[indexEnd])
 
 	if err != nil {
 		t.Fatal("Valid index.between call failed")
 	}
 
-	expected := []string{"c", "c0", "c1", "c2", "d"}
+	expected := keys[indexStart : indexEnd+1]
 	for i, item := range between {
 		if item.key != expected[i] {
 			t.Fatalf("Keys do not match. Expected %s, Got %s", expected[i], item.key)
