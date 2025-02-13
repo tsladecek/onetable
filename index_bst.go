@@ -142,7 +142,7 @@ func inorder(buffer *[]*BSTNode, node *BSTNode) {
 	}
 }
 
-func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string) {
+func inorderBetween(buffer *[]*Item, node *BSTNode, fromKey string, toKey string) {
 	if node == nil {
 		return
 	}
@@ -152,7 +152,7 @@ func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string
 	}
 
 	if node.key >= fromKey && node.key <= toKey {
-		*buffer = append(*buffer, &item{key: node.key, value: node.value})
+		*buffer = append(*buffer, &Item{Key: node.key, Value: node.value})
 	}
 
 	if node.right != nil && node.key <= toKey {
@@ -160,8 +160,8 @@ func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string
 	}
 }
 
-func (index *IndexBST) between(fromKey string, toKey string) ([]*item, error) {
-	res := &[]*item{}
+func (index *IndexBST) between(fromKey string, toKey string) ([]*Item, error) {
+	res := &[]*Item{}
 	inorderBetween(res, index.root, fromKey, toKey)
 	return *res, nil
 }

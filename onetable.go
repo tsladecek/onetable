@@ -32,9 +32,9 @@ func (v valueMetadata) Length() int {
 	return v.length
 }
 
-type item struct {
-	key   string
-	value ValueMetadata
+type Item struct {
+	Key   string
+	Value ValueMetadata
 }
 
 const tombstone int = -1
@@ -43,7 +43,7 @@ type Index interface {
 	get(key string) (ValueMetadata, bool)
 	insert(key string, value ValueMetadata) error
 	delete(key string) error
-	between(fromKey string, toKey string) ([]*item, error)
+	between(fromKey string, toKey string) ([]*Item, error)
 }
 
 const (
@@ -270,4 +270,8 @@ func (o *OneTable) Delete(key string) error {
 
 	o.writeKey(key, valueMetadata{offset: -1, length: tombstone})
 	return o.Index.delete(key)
+}
+
+func (o *OneTable) Between(fromKey string, toKey string) ([]*Item, error) {
+	return o.Index.between(fromKey, toKey)
 }

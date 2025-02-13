@@ -45,6 +45,7 @@ func main() {
 	println("---Starting OneTable console---\n")
 	println("Available commands:")
 	println("get <key>")
+	println("between <from key> <to key>")
 	println("insert <key> <value>")
 	println("delete <key>\n")
 
@@ -87,8 +88,8 @@ func main() {
 		}
 
 		if command == "insert" {
-			if len(inputArr) < 3 {
-				fmt.Println("Invalid insert instruction. Expected space separated key and value")
+			if len(inputArr) != 3 {
+				fmt.Println("Invalid insert instruction. Expected 'insert <key> <value>'")
 				continue
 			}
 			value := inputArr[2]
@@ -99,6 +100,27 @@ func main() {
 				continue
 			}
 			fmt.Printf(">Inserted %s: %s\n", key, value)
+			continue
+		}
+
+		if command == "between" {
+			if len(inputArr) != 3 {
+				fmt.Println("Invalid between instruction. Expected 'between <from key> <to key>'")
+			}
+
+			items, err := t.Between(inputArr[1], inputArr[2])
+
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
+
+			res := ""
+			for _, item := range items {
+				value, _ := t.Get(item.Key)
+				res += fmt.Sprintf("%s: %s\t", item.Key, value)
+			}
+			fmt.Println(">" + res)
 			continue
 		}
 		println("Invalid instruction")

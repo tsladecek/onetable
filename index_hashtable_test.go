@@ -24,8 +24,8 @@ func TestIndexHashTableBetween(t *testing.T) {
 
 	expected := []string{"c", "c0", "c1", "c2", "d"}
 	for i, item := range between {
-		if item.key != expected[i] {
-			t.Fatalf("Keys do not match. Expected %s, Got %s", expected[i], item.key)
+		if item.Key != expected[i] {
+			t.Fatalf("Keys do not match. Expected %s, Got %s", expected[i], item.Key)
 		}
 	}
 }
