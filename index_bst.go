@@ -2,7 +2,7 @@ package onetable
 
 type BSTNode struct {
 	key   string
-	value valueMetadata
+	value ValueMetadata
 	left  *BSTNode
 	right *BSTNode
 }
@@ -15,12 +15,12 @@ func NewIndexBST() *IndexBST {
 	return &IndexBST{}
 }
 
-func (index *IndexBST) get(key string) *valueMetadata {
+func (index *IndexBST) get(key string) (ValueMetadata, bool) {
 	current := index.root
 
 	for current != nil {
 		if current.key == key {
-			return &current.value
+			return current.value, true
 		}
 
 		if key < current.key {
@@ -30,10 +30,10 @@ func (index *IndexBST) get(key string) *valueMetadata {
 		}
 	}
 
-	return nil
+	return nil, false
 }
 
-func (index *IndexBST) insert(key string, valueMeta valueMetadata) error {
+func (index *IndexBST) insert(key string, valueMeta ValueMetadata) error {
 	newNode := &BSTNode{key: key, value: valueMeta}
 
 	if index.root == nil {
@@ -147,7 +147,7 @@ func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string
 		return
 	}
 
-	if node.left != nil {
+	if node.left != nil && node.key >= fromKey {
 		inorderBetween(buffer, node.left, fromKey, toKey)
 	}
 
@@ -155,7 +155,7 @@ func inorderBetween(buffer *[]*item, node *BSTNode, fromKey string, toKey string
 		*buffer = append(*buffer, &item{key: node.key, value: node.value})
 	}
 
-	if node.right != nil {
+	if node.right != nil && node.key <= toKey {
 		inorderBetween(buffer, node.right, fromKey, toKey)
 	}
 }

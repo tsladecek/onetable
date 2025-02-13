@@ -14,21 +14,34 @@ import (
 
 type typeOffset int
 
+type ValueMetadata interface {
+	Offset() typeOffset
+	Length() int
+}
+
 type valueMetadata struct {
 	offset typeOffset
 	length int
 }
 
+func (v valueMetadata) Offset() typeOffset {
+	return v.offset
+}
+
+func (v valueMetadata) Length() int {
+	return v.length
+}
+
 type item struct {
 	key   string
-	value valueMetadata
+	value ValueMetadata
 }
 
 const tombstone int = -1
 
 type Index interface {
-	get(key string) *valueMetadata
-	insert(key string, value valueMetadata) error
+	get(key string) (ValueMetadata, bool)
+	insert(key string, value ValueMetadata) error
 	delete(key string) error
 	between(fromKey string, toKey string) ([]*item, error)
 }
@@ -232,9 +245,9 @@ func (o *OneTable) Insert(key string, value []byte) error {
 }
 
 func (o *OneTable) Get(key string) ([]byte, error) {
-	valueMeta := o.Index.get(key)
+	valueMeta, found := o.Index.get(key)
 
-	if valueMeta == nil {
+	if !found {
 		return nil, nil
 	}
 
@@ -245,8 +258,8 @@ func (o *OneTable) Get(key string) ([]byte, error) {
 
 	defer f.Close()
 
-	b := make([]byte, valueMeta.length)
-	f.ReadAt(b, int64(valueMeta.offset))
+	b := make([]byte, valueMeta.Length())
+	f.ReadAt(b, int64(valueMeta.Offset()))
 
 	return b, nil
 }

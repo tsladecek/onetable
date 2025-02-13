@@ -36,7 +36,7 @@ func TestBSTInsert(t *testing.T) {
 		t.Fatal("root.right key not correct")
 	}
 
-	if bst.root.right.value.offset != 0 {
+	if bst.root.right.value.Offset() != 0 {
 		t.Fatal("root.right.value.offset not 0")
 	}
 
@@ -51,7 +51,7 @@ func TestBSTInsert(t *testing.T) {
 		t.Fatal("root.right key not correct")
 	}
 
-	if bst.root.right.value.offset != offset {
+	if bst.root.right.value.Offset() != offset {
 		t.Fatalf("root.right.value.offset not %d", offset)
 	}
 }
@@ -59,10 +59,10 @@ func TestBSTInsert(t *testing.T) {
 func TestBSTGet(t *testing.T) {
 	bst := NewIndexBST()
 
-	v := bst.get("key")
+	_, found := bst.get("key")
 
-	if v != nil {
-		t.Fatal("Expecting nil value in empty tree")
+	if found {
+		t.Fatal("Expecting no node found in empty tree")
 	}
 
 	for i, k := range []string{"d", "a", "b", "f"} {
@@ -74,13 +74,13 @@ func TestBSTGet(t *testing.T) {
 	}
 
 	for i, k := range []string{"d", "a", "b", "f"} {
-		v = bst.get(k)
-		if v == nil {
-			t.Fatal("Expected non nil value")
+		v, found := bst.get(k)
+		if !found {
+			t.Fatalf("Node %s not found", k)
 		}
 
-		if v.offset != typeOffset(i) {
-			t.Fatalf("Wrong offset %d for key %s. Expected %d", v.offset, k, i)
+		if v.Offset() != typeOffset(i) {
+			t.Fatalf("Wrong offset %d for key %s. Expected %d", v.Offset(), k, i)
 		}
 	}
 }
@@ -116,8 +116,8 @@ func TestBSTDeleteLeaf(t *testing.T) {
 		t.Fatal("Root.right.left node is not e")
 	}
 
-	v := bst.get("g")
-	if v != nil {
+	_, found := bst.get("g")
+	if found {
 		t.Fatal("Node g found in tree even after deletion")
 	}
 }
@@ -144,8 +144,8 @@ func TestBSTDeleteOneChild(t *testing.T) {
 		t.Fatal("Root.right node.key is not e")
 	}
 
-	v := bst.get("f")
-	if v != nil {
+	_, found := bst.get("f")
+	if found {
 		t.Fatal("Node f found in tree even after deletion")
 	}
 }
@@ -179,8 +179,8 @@ func TestBSTDeleteTwoChildren(t *testing.T) {
 		t.Fatal("Root.left.left node.key is not a")
 	}
 
-	v := bst.get("b")
-	if v != nil {
+	_, found := bst.get("b")
+	if found {
 		t.Fatal("Node b found in tree even after deletion")
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-type HashIndex map[string]valueMetadata
+type HashIndex map[string]ValueMetadata
 
 type IndexHashTable struct {
 	index HashIndex
@@ -16,17 +16,12 @@ func NewIndexHashTable() *IndexHashTable {
 	return &IndexHashTable{index: index}
 }
 
-func (index *IndexHashTable) get(key string) *valueMetadata {
-	v, ok := index.index[key]
-
-	if !ok {
-		return nil
-	}
-
-	return &v
+func (index *IndexHashTable) get(key string) (ValueMetadata, bool) {
+	v, found := index.index[key]
+	return v, found
 }
 
-func (index *IndexHashTable) insert(key string, valueMeta valueMetadata) error {
+func (index *IndexHashTable) insert(key string, valueMeta ValueMetadata) error {
 	index.index[key] = valueMeta
 
 	return nil
@@ -50,11 +45,11 @@ func (index *IndexHashTable) between(fromKey string, toKey string) ([]*item, err
 	sort.Strings(keys)
 
 	for i, k := range keys {
-		v := index.get(k)
-		if v == nil {
+		v, found := index.get(k)
+		if !found {
 			return nil, fmt.Errorf("Found no value for key %s", k)
 		}
-		items[i] = &item{key: k, value: *v}
+		items[i] = &item{key: k, value: v}
 	}
 
 	return items, nil
