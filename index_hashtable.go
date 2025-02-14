@@ -1,6 +1,11 @@
 package onetable
 
-type HashIndex map[string]valueMetadata
+import (
+	"fmt"
+	"sort"
+)
+
+type HashIndex map[string]ValueMetadata
 
 type IndexHashTable struct {
 	index HashIndex
@@ -11,23 +16,41 @@ func NewIndexHashTable() *IndexHashTable {
 	return &IndexHashTable{index: index}
 }
 
-func (h *IndexHashTable) get(key string) *valueMetadata {
-	v, ok := h.index[key]
+func (index *IndexHashTable) get(key string) (ValueMetadata, bool) {
+	v, found := index.index[key]
+	return v, found
+}
 
-	if !ok {
-		return nil
+func (index *IndexHashTable) insert(key string, valueMeta ValueMetadata) error {
+	index.index[key] = valueMeta
+
+	return nil
+}
+
+func (index *IndexHashTable) delete(key string) error {
+	delete(index.index, key)
+	return nil
+}
+
+func (index *IndexHashTable) between(fromKey string, toKey string) ([]*item, error) {
+	keys := []string{}
+
+	for k := range index.index {
+		if k >= fromKey && k <= toKey {
+			keys = append(keys, k)
+		}
 	}
 
-	return &v
-}
+	items := make([]*item, len(keys))
+	sort.Strings(keys)
 
-func (h *IndexHashTable) insert(key string, valueMeta valueMetadata) error {
-	h.index[key] = valueMeta
+	for i, k := range keys {
+		v, found := index.get(k)
+		if !found {
+			return nil, fmt.Errorf("Found no value for key %s", k)
+		}
+		items[i] = &item{Key: k, Value: v}
+	}
 
-	return nil
-}
-
-func (h *IndexHashTable) delete(key string) error {
-	delete(h.index, key)
-	return nil
+	return items, nil
 }

@@ -14,17 +14,41 @@ import (
 
 type typeOffset int
 
+type ValueMetadata interface {
+	Offset() typeOffset
+	Length() int
+}
+
 type valueMetadata struct {
 	offset typeOffset
 	length int
 }
 
+func (v valueMetadata) Offset() typeOffset {
+	return v.offset
+}
+
+func (v valueMetadata) Length() int {
+	return v.length
+}
+
+type item struct {
+	Key   string
+	Value ValueMetadata
+}
+
+type RangeItem struct {
+	Key   string
+	Value []byte
+}
+
 const tombstone int = -1
 
 type Index interface {
-	get(key string) *valueMetadata
-	insert(key string, value valueMetadata) error
+	get(key string) (ValueMetadata, bool)
+	insert(key string, value ValueMetadata) error
 	delete(key string) error
+	between(fromKey string, toKey string) ([]*item, error)
 }
 
 const (
@@ -225,12 +249,7 @@ func (o *OneTable) Insert(key string, value []byte) error {
 	return nil
 }
 
-func (o *OneTable) Get(key string) ([]byte, error) {
-	valueMeta := o.Index.get(key)
-
-	if valueMeta == nil {
-		return nil, nil
-	}
+func (o *OneTable) readValue(offset typeOffset, length int) ([]byte, error) {
 
 	f, err := os.Open(o.dataPath)
 	if err != nil {
@@ -239,10 +258,21 @@ func (o *OneTable) Get(key string) ([]byte, error) {
 
 	defer f.Close()
 
-	b := make([]byte, valueMeta.length)
-	f.ReadAt(b, int64(valueMeta.offset))
+	b := make([]byte, length)
+	f.ReadAt(b, int64(offset))
 
 	return b, nil
+
+}
+
+func (o *OneTable) Get(key string) ([]byte, error) {
+	valueMeta, found := o.Index.get(key)
+
+	if !found {
+		return nil, nil
+	}
+
+	return o.readValue(valueMeta.Offset(), valueMeta.Length())
 }
 
 func (o *OneTable) Delete(key string) error {
@@ -251,4 +281,25 @@ func (o *OneTable) Delete(key string) error {
 
 	o.writeKey(key, valueMetadata{offset: -1, length: tombstone})
 	return o.Index.delete(key)
+}
+
+func (o *OneTable) Between(fromKey string, toKey string) ([]*RangeItem, error) {
+	items, err := o.Index.between(fromKey, toKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ritems := make([]*RangeItem, len(items))
+
+	for i := 0; i < len(items); i++ {
+		v, err := o.readValue(items[i].Value.Offset(), items[i].Value.Length())
+		if err != nil {
+			return nil, err
+		}
+
+		ritems[i] = &RangeItem{Key: items[i].Key, Value: v}
+	}
+
+	return ritems, nil
 }
